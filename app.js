@@ -2,1127 +2,187 @@ const API_URL =
   "https://ros-material-api.peter-hasselberg.workers.dev";
 
 
+/* =====================================================
+   STATIONER
+===================================================== */
+
+const STATIONS = [
+  "Nyköping",
+  "Oxelösund",
+  "Trosa",
+  "Gnesta",
+  "Vagnhärad",
+  "Jönåker",
+  "Nykvarn",
+  "Tystberga",
+  "Nävekvarn",
+  "Stigtomta"
+];
+
+
+/* =====================================================
+   STATE
+===================================================== */
+
 let currentMaterial = null;
-let qrScanner = null;
+let scanner = null;
+let currentHistory = [];
+let materialCache = [];
+let scannerPurpose = "normal";
 
 
-/* --------------------------------------------------
+/* =====================================================
    ELEMENT
--------------------------------------------------- */
+===================================================== */
 
-const startSection = document.getElementById("startSection");
-const materialSection = document.getElementById("materialSection");
-
-const materialSearch = document.getElementById("materialSearch");
-const searchButton = document.getElementById("searchButton");
-
-const scanButton = document.getElementById("scanButton");
-const scannerContainer = document.getElementById("scannerContainer");
-const closeScannerButton = document.getElementById("closeScannerButton");
-
-const message = document.getElementById("message");
-
-const materialId = document.getElementById("materialId");
-const materialName = document.getElementById("materialName");
-const materialCategory = document.getElementById("materialCategory");
-const materialSerial = document.getElementById("materialSerial");
-const materialQuantity = document.getElementById("materialQuantity");
-const materialStation = document.getElementById("materialStation");
-const materialControlDate = document.getElementById("materialControlDate");
-const materialComment = document.getElementById("materialComment");
-
-const statusBadge = document.getElementById("statusBadge");
-
-const checkInButton = document.getElementById("checkInButton");
-const checkOutButton = document.getElementById("checkOutButton");
-const moveButton = document.getElementById("moveButton");
-const serviceButton = document.getElementById("serviceButton");
-const inventoryButton = document.getElementById("inventoryButton");
-
-const historyButton = document.getElementById("historyButton");
-const historyContainer = document.getElementById("historyContainer");
-
-const newSearchButton = document.getElementById("newSearchButton");
-
-const modal = document.getElementById("modal");
-const modalTitle = document.getElementById("modalTitle");
-const modalBody = document.getElementById("modalBody");
-
-const closeModalButton = document.getElementById("closeModalButton");
-const cancelModalButton = document.getElementById("cancelModalButton");
-const confirmModalButton = document.getElementById("confirmModalButton");
-
-const loading = document.getElementById("loading");
+const $ = id => document.getElementById(id);
 
 
-/* --------------------------------------------------
-   START
--------------------------------------------------- */
+/* =====================================================
+   VIEW
+===================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+function showView(id) {
 
-  searchButton.addEventListener("click", searchMaterial);
-
-  materialSearch.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      searchMaterial();
-    }
+  document.querySelectorAll(".view").forEach(view => {
+    view.classList.remove("active");
   });
 
-  scanButton.addEventListener("click", startScanner);
+  const view = $(id);
 
-  closeScannerButton.addEventListener(
-    "click",
-    stopScanner
-  );
+  if (view) {
+    view.classList.add("active");
+  }
 
-  checkInButton.addEventListener(
-    "click",
-    () => openActionModal("checka-in")
-  );
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
 
-  checkOutButton.addEventListener(
-    "click",
-    () => openActionModal("checka-ut")
-  );
 
-  moveButton.addEventListener(
-    "click",
-    () => openActionModal("flytta")
-  );
+/* =====================================================
+   TOAST
+===================================================== */
 
-  serviceButton.addEventListener(
-    "click",
-    () => openActionModal("service")
-  );
+function showToast(message) {
 
-  inventoryButton.addEventListener(
-    "click",
-    () => openActionModal("inventering")
-  );
+  const toast = $("toast");
 
-  historyButton.addEventListener(
-    "click",
-    loadHistory
-  );
+  toast.textContent = message;
+  toast.classList.add("show");
 
-  newSearchButton.addEventListener(
-    "click",
-    resetApp
-  );
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+}
 
-  closeModalButton.addEventListener(
-    "click",
-    closeModal
-  );
 
-  cancelModalButton.addEventListener(
-    "click",
-    closeModal
-  );
+/* =====================================================
+   MODAL
+===================================================== */
 
-  confirmModalButton.addEventListener(
-    "click",
-    confirmAction
-  );
+function openModal(title, content) {
+
+  $("modalTitle").textContent = title;
+  $("modalContent").innerHTML = content;
+  $("modal").classList.remove("hidden");
+}
+
+function closeModal() {
+
+  $("modal").classList.add("hidden");
+}
+
+$("closeModal").addEventListener("click", closeModal);
+
+$("modal").addEventListener("click", event => {
+
+  if (event.target === $("modal")) {
+    closeModal();
+  }
 
 });
 
 
-/* --------------------------------------------------
-   SEARCH
--------------------------------------------------- */
+/* =====================================================
+   API
+===================================================== */
 
-async function searchMaterial() {
+async function apiGet(path) {
 
-  const id = materialSearch.value.trim();
-
-  if (!id) {
-    showMessage(
-      "Skriv in ett Material-ID.",
-      "error"
-    );
-
-    return;
-  }
-
-  await loadMaterial(id);
-}
-
-
-/* --------------------------------------------------
-   LOAD MATERIAL
--------------------------------------------------- */
-
-async function loadMaterial(id) {
-
-  showLoading(true);
-  hideMessage();
-
-  try {
-
-    const response = await fetch(
-      `${API_URL}/material/${encodeURIComponent(id)}`
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-
-      throw new Error(
-        data.error || "Materialet hittades inte."
-      );
-    }
-
-    currentMaterial = data.material;
-
-    displayMaterial(currentMaterial);
-
-  } catch (error) {
-
-    showMessage(
-      error.message ||
-      "Kunde inte hämta materialet.",
-      "error"
-    );
-
-  } finally {
-
-    showLoading(false);
-
-  }
-}
-
-
-/* --------------------------------------------------
-   DISPLAY MATERIAL
--------------------------------------------------- */
-
-function displayMaterial(material) {
-
-  startSection.classList.add("hidden");
-  materialSection.classList.remove("hidden");
-
-  const id =
-    material["Material-ID"] ||
-    "";
-
-  const name =
-    material["Material"] ||
-    "Okänt material";
-
-  const category =
-    material["Kategori"]?.value ||
-    material["Kategori"] ||
-    "–";
-
-  const serial =
-    material["Serienummer"] ||
-    "–";
-
-  const quantity =
-    material["Antal"] ||
-    "–";
-
-  const station =
-    material["Station"]?.value ||
-    material["Station"] ||
-    "–";
-
-  const status =
-    material["Status"]?.value ||
-    material["Status"] ||
-    "–";
-
-  const controlDate =
-    material["Kontrolldatum"] ||
-    "–";
-
-  const comment =
-    material["Kommentar"] ||
-    "–";
-
-
-  materialId.textContent = id;
-
-  materialName.textContent = name;
-
-  materialCategory.textContent = category;
-
-  materialSerial.textContent = serial;
-
-  materialQuantity.textContent = quantity;
-
-  materialStation.textContent = station;
-
-  materialControlDate.textContent =
-    formatDate(controlDate);
-
-  materialComment.textContent = comment;
-
-
-  setStatus(status);
-
-  updateActionButtons(status);
-
-  historyContainer.innerHTML = "";
-
-  historyContainer.classList.add("hidden");
-}
-
-
-/* --------------------------------------------------
-   STATUS
--------------------------------------------------- */
-
-function setStatus(status) {
-
-  statusBadge.textContent = status;
-
-  statusBadge.className =
-    "status-badge";
-
-  if (status === "Tillgänglig") {
-
-    statusBadge.classList.add(
-      "status-available"
-    );
-
-  } else if (status === "Utlånad") {
-
-    statusBadge.classList.add(
-      "status-loaned"
-    );
-
-  } else if (status === "Service") {
-
-    statusBadge.classList.add(
-      "status-service"
-    );
-
-  } else {
-
-    statusBadge.classList.add(
-      "status-other"
-    );
-  }
-}
-
-
-/* --------------------------------------------------
-   ACTION BUTTONS
--------------------------------------------------- */
-
-function updateActionButtons(status) {
-
-  checkInButton.disabled =
-    status !== "Utlånad";
-
-  checkOutButton.disabled =
-    status === "Utlånad";
-
-  serviceButton.disabled =
-    status === "Service";
-
-}
-
-
-/* --------------------------------------------------
-   MODAL
--------------------------------------------------- */
-
-let currentAction = null;
-
-function openActionModal(action) {
-
-  if (!currentMaterial) {
-    return;
-  }
-
-  currentAction = action;
-
-  modalBody.innerHTML = "";
-
-  let title = "";
-
-  if (action === "checka-in") {
-    title = "CHECKA IN";
-  }
-
-  if (action === "checka-ut") {
-    title = "CHECKA UT";
-  }
-
-  if (action === "flytta") {
-    title = "FLYTTA MATERIAL";
-  }
-
-  if (action === "service") {
-    title = "SERVICE";
-  }
-
-  if (action === "inventering") {
-    title = "INVENTERING";
-  }
-
-  modalTitle.textContent = title;
-
-
-  /* UTFÖRD AV */
-
-  const userGroup =
-    createFormGroup(
-      "utfördAv",
-      "Utförd av",
-      "text",
-      "",
-      "Namn"
-    );
-
-  modalBody.appendChild(userGroup);
-
-
-  /* STATION VID FLYTT */
-
-  if (action === "flytta") {
-
-    const stationGroup =
-      document.createElement("div");
-
-    stationGroup.className =
-      "form-group";
-
-    stationGroup.innerHTML = `
-      <label for="tillStation">
-        Till station
-      </label>
-
-      <select id="tillStation">
-
-        <option value="">
-          Välj station
-        </option>
-
-        <option value="Nyköping">
-          Nyköping
-        </option>
-
-        <option value="Oxelösund">
-          Oxelösund
-        </option>
-
-        <option value="Trosa">
-          Trosa
-        </option>
-
-        <option value="Gnesta">
-          Gnesta
-        </option>
-
-        <option value="Vagnhärad">
-          Vagnhärad
-        </option>
-
-        <option value="Jönåker">
-          Jönåker
-        </option>
-
-        <option value="Nykvarn">
-          Nykvarn
-        </option>
-
-        <option value="Tystberga">
-          Tystberga
-        </option>
-
-        <option value="Nävekvarn">
-          Nävekvarn
-        </option>
-
-        <option value="Stigtomta">
-          Stigtomta
-        </option>
-
-      </select>
-    `;
-
-    modalBody.appendChild(
-      stationGroup
-    );
-  }
-
-
-  /* KOMMENTAR */
-
-  const commentGroup =
-    createTextareaGroup(
-      "kommentar",
-      "Kommentar"
-    );
-
-  modalBody.appendChild(
-    commentGroup
+  const response = await fetch(
+    API_URL + path
   );
 
+  const data = await response.json();
 
-  modal.classList.remove("hidden");
-}
-
-
-function createFormGroup(
-  id,
-  label,
-  type,
-  value = "",
-  placeholder = ""
-) {
-
-  const group =
-    document.createElement("div");
-
-  group.className =
-    "form-group";
-
-  group.innerHTML = `
-    <label for="${id}">
-      ${label}
-    </label>
-
-    <input
-      id="${id}"
-      type="${type}"
-      value="${escapeHtml(value)}"
-      placeholder="${placeholder}"
-      autocomplete="off"
-    >
-  `;
-
-  return group;
-}
-
-
-function createTextareaGroup(
-  id,
-  label
-) {
-
-  const group =
-    document.createElement("div");
-
-  group.className =
-    "form-group";
-
-  group.innerHTML = `
-    <label for="${id}">
-      ${label}
-    </label>
-
-    <textarea
-      id="${id}"
-      placeholder="Valfri kommentar"
-    ></textarea>
-  `;
-
-  return group;
-}
-
-
-/* --------------------------------------------------
-   CONFIRM ACTION
--------------------------------------------------- */
-
-async function confirmAction() {
-
-  if (!currentMaterial || !currentAction) {
-    return;
-  }
-
-  const utfördAv =
-    document
-      .getElementById("utfördAv")
-      ?.value
-      .trim();
-
-  const kommentar =
-    document
-      .getElementById("kommentar")
-      ?.value
-      .trim() || "";
-
-  if (!utfördAv) {
-
-    showModalError(
-      "Fyll i vem som utfört åtgärden."
+  if (!response.ok || data.success === false) {
+    throw new Error(
+      data.error || "Ett fel inträffade."
     );
-
-    return;
   }
 
-
-  const materialId =
-    currentMaterial["Material-ID"];
-
-
-  const body = {
-    "Material-ID": materialId,
-    "Utförd av": utfördAv,
-    "Kommentar": kommentar
-  };
+  return data;
+}
 
 
-  if (currentAction === "flytta") {
+async function apiPost(path, body) {
 
-    const tillStation =
-      document
-        .getElementById("tillStation")
-        ?.value;
-
-    if (!tillStation) {
-
-      showModalError(
-        "Välj till vilken station materialet ska flyttas."
-      );
-
-      return;
+  const response = await fetch(
+    API_URL + path,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
     }
-
-    body["Till station"] =
-      tillStation;
-  }
-
-
-  let endpoint = "";
-
-  if (currentAction === "checka-in") {
-    endpoint = "/checka-in";
-  }
-
-  if (currentAction === "checka-ut") {
-    endpoint = "/checka-ut";
-  }
-
-  if (currentAction === "flytta") {
-    endpoint = "/flytta";
-  }
-
-  if (currentAction === "service") {
-    endpoint = "/service";
-  }
-
-  if (currentAction === "inventering") {
-    endpoint = "/inventering";
-  }
-
-
-  showLoading(true);
-
-  try {
-
-    const response =
-      await fetch(
-        `${API_URL}${endpoint}`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(body)
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (!response.ok || !data.success) {
-
-      throw new Error(
-        data.error ||
-        "Åtgärden kunde inte genomföras."
-      );
-    }
-
-
-    closeModal();
-
-    showMessage(
-      data.message ||
-      "Åtgärden är registrerad.",
-      "success"
-    );
-
-
-    /*
-      Hämta materialet igen så att
-      status/station uppdateras direkt.
-    */
-
-    await loadMaterial(
-      materialId
-    );
-
-
-  } catch (error) {
-
-    showModalError(
-      error.message ||
-      "Ett fel uppstod."
-    );
-
-  } finally {
-
-    showLoading(false);
-
-  }
-}
-
-
-/* --------------------------------------------------
-   HISTORY
--------------------------------------------------- */
-
-async function loadHistory() {
-
-  if (!currentMaterial) {
-    return;
-  }
-
-  const id =
-    currentMaterial["Material-ID"];
-
-  showLoading(true);
-
-  try {
-
-    const response =
-      await fetch(
-        `${API_URL}/historik/${encodeURIComponent(id)}`
-      );
-
-    const data =
-      await response.json();
-
-
-    if (!response.ok || !data.success) {
-
-      throw new Error(
-        data.error ||
-        "Kunde inte hämta historiken."
-      );
-    }
-
-
-    renderHistory(
-      data.historik || []
-    );
-
-
-  } catch (error) {
-
-    showMessage(
-      error.message ||
-      "Kunde inte hämta historiken.",
-      "error"
-    );
-
-  } finally {
-
-    showLoading(false);
-
-  }
-}
-
-
-/* --------------------------------------------------
-   RENDER HISTORY
--------------------------------------------------- */
-
-function renderHistory(rows) {
-
-  historyContainer.innerHTML = "";
-
-  historyContainer.classList.remove(
-    "hidden"
   );
 
+  const data = await response.json();
 
-  if (!rows.length) {
-
-    historyContainer.innerHTML = `
-      <div class="history-item">
-        Ingen historik registrerad.
-      </div>
-    `;
-
-    return;
+  if (!response.ok || data.success === false) {
+    throw new Error(
+      data.error || "Ett fel inträffade."
+    );
   }
 
-
-  rows.forEach(row => {
-
-    const item =
-      document.createElement("div");
-
-    item.className =
-      "history-item";
-
-
-    const action =
-      row["Åtgärd"]?.value ||
-      row["Åtgärd"] ||
-      "Åtgärd";
-
-
-    const from =
-      row["Från station"] || "";
-
-    const to =
-      row["Till station"] || "";
-
-    const user =
-      row["Utförd av"] || "";
-
-    const date =
-      formatDateTime(
-        row["Datum"]
-      );
-
-    const comment =
-      row["Kommentar"] || "";
-
-
-    let movement = "";
-
-    if (from && to) {
-
-      movement =
-        `${from} → ${to}`;
-
-    } else if (from) {
-
-      movement =
-        from;
-    }
-
-
-    item.innerHTML = `
-      <div class="history-action">
-        ${escapeHtml(action)}
-      </div>
-
-      <div class="history-meta">
-        ${escapeHtml(date)}
-        ${user ? " • " + escapeHtml(user) : ""}
-        ${movement ? " • " + escapeHtml(movement) : ""}
-      </div>
-
-      ${
-        comment
-          ? `
-            <div class="history-comment">
-              ${escapeHtml(comment)}
-            </div>
-          `
-          : ""
-      }
-    `;
-
-
-    historyContainer.appendChild(
-      item
-    );
-
-  });
+  return data;
 }
 
 
-/* --------------------------------------------------
-   QR SCANNER
--------------------------------------------------- */
+/* =====================================================
+   FORMAT
+===================================================== */
 
-async function startScanner() {
+function valueOf(value) {
 
   if (
-    typeof Html5Qrcode ===
-    "undefined"
+    value &&
+    typeof value === "object" &&
+    "value" in value
   ) {
-
-    showMessage(
-      "QR-skannern kunde inte laddas. Kontrollera internetanslutningen.",
-      "error"
-    );
-
-    return;
+    return value.value;
   }
 
-
-  scannerContainer.classList.remove(
-    "hidden"
-  );
-
-  scanButton.classList.add(
-    "hidden"
-  );
-
-
-  qrScanner =
-    new Html5Qrcode("reader");
-
-
-  try {
-
-    await qrScanner.start(
-
-      {
-        facingMode: "environment"
-      },
-
-      {
-        fps: 10,
-        qrbox: {
-          width: 250,
-          height: 250
-        }
-      },
-
-      decodedText => {
-
-        materialSearch.value =
-          decodedText.trim();
-
-        stopScanner();
-
-        searchMaterial();
-
-      },
-
-      errorMessage => {
-        // Ignorera löpande
-        // skanningsfel.
-      }
-
-    );
-
-  } catch (error) {
-
-    scannerContainer.classList.add(
-      "hidden"
-    );
-
-    scanButton.classList.remove(
-      "hidden"
-    );
-
-    showMessage(
-      "Kunde inte starta kameran. Kontrollera att webbläsaren har tillgång till kameran.",
-      "error"
-    );
-  }
+  return value ?? "";
 }
 
 
-/* --------------------------------------------------
-   STOP SCANNER
--------------------------------------------------- */
+function formatDate(dateString) {
 
-async function stopScanner() {
-
-  if (qrScanner) {
-
-    try {
-
-      await qrScanner.stop();
-
-      await qrScanner.clear();
-
-    } catch (error) {
-      // Ingen åtgärd behövs.
-    }
-
-    qrScanner = null;
+  if (!dateString) {
+    return "-";
   }
 
+  const date = new Date(dateString);
 
-  scannerContainer.classList.add(
-    "hidden"
-  );
-
-  scanButton.classList.remove(
-    "hidden"
-  );
-}
-
-
-/* --------------------------------------------------
-   RESET
--------------------------------------------------- */
-
-function resetApp() {
-
-  currentMaterial = null;
-
-  materialSection.classList.add(
-    "hidden"
-  );
-
-  startSection.classList.remove(
-    "hidden"
-  );
-
-  materialSearch.value = "";
-
-  hideMessage();
-
-  historyContainer.innerHTML = "";
-
-  historyContainer.classList.add(
-    "hidden"
-  );
-
-  materialSearch.focus();
-}
-
-
-/* --------------------------------------------------
-   MODAL
--------------------------------------------------- */
-
-function closeModal() {
-
-  modal.classList.add(
-    "hidden"
-  );
-
-  modalBody.innerHTML = "";
-
-  currentAction = null;
-}
-
-
-function showModalError(text) {
-
-  const old =
-    document.getElementById(
-      "modalError"
-    );
-
-  if (old) {
-    old.remove();
+  if (Number.isNaN(date.getTime())) {
+    return dateString;
   }
 
-
-  const error =
-    document.createElement("div");
-
-  error.id =
-    "modalError";
-
-  error.className =
-    "message error";
-
-  error.textContent =
-    text;
-
-  modalBody.prepend(
-    error
-  );
-}
-
-
-/* --------------------------------------------------
-   MESSAGE
--------------------------------------------------- */
-
-function showMessage(
-  text,
-  type = "info"
-) {
-
-  message.textContent =
-    text;
-
-  message.className =
-    `message ${type}`;
-
-  message.classList.remove(
-    "hidden"
-  );
-}
-
-
-function hideMessage() {
-
-  message.classList.add(
-    "hidden"
-  );
-
-  message.textContent = "";
-}
-
-
-/* --------------------------------------------------
-   LOADING
--------------------------------------------------- */
-
-function showLoading(show) {
-
-  if (show) {
-
-    loading.classList.remove(
-      "hidden"
-    );
-
-  } else {
-
-    loading.classList.add(
-      "hidden"
-    );
-  }
-}
-
-
-/* --------------------------------------------------
-   DATE
--------------------------------------------------- */
-
-function formatDate(date) {
-
-  if (!date || date === "–") {
-    return "–";
-  }
-
-  const d =
-    new Date(date);
-
-  if (Number.isNaN(d.getTime())) {
-    return date;
-  }
-
-  return d.toLocaleDateString(
-    "sv-SE"
-  );
-}
-
-
-function formatDateTime(date) {
-
-  if (!date) {
-    return "–";
-  }
-
-  const d =
-    new Date(date);
-
-  if (Number.isNaN(d.getTime())) {
-    return date;
-  }
-
-  return d.toLocaleString(
+  return date.toLocaleString(
     "sv-SE",
     {
       dateStyle: "short",
@@ -1132,16 +192,1338 @@ function formatDateTime(date) {
 }
 
 
-/* --------------------------------------------------
-   SECURITY / HTML
--------------------------------------------------- */
+function statusClass(status) {
+
+  if (status === "Tillgänglig") {
+    return "available";
+  }
+
+  if (status === "Utlånad") {
+    return "loaned";
+  }
+
+  if (status === "Service") {
+    return "service";
+  }
+
+  return "other";
+}
+
+
+/* =====================================================
+   MATERIAL
+===================================================== */
+
+async function loadMaterial(materialId) {
+
+  materialId = String(materialId || "").trim();
+
+  if (!materialId) {
+    showToast("Ange Material-ID.");
+    return;
+  }
+
+  try {
+
+    showToast("Hämtar material...");
+
+    const data =
+      await apiGet(
+        `/material/${encodeURIComponent(materialId)}`
+      );
+
+    currentMaterial = data.material;
+
+    renderMaterial();
+
+    showView("materialView");
+
+  } catch (error) {
+
+    openModal(
+      "Material hittades inte",
+      `
+        <div class="error-message">
+          ${escapeHtml(error.message)}
+        </div>
+      `
+    );
+
+  }
+}
+
+
+function renderMaterial() {
+
+  const material = currentMaterial;
+
+  if (!material) {
+    return;
+  }
+
+  const materialId =
+    valueOf(material["Material-ID"]);
+
+  const name =
+    valueOf(material["Material"]);
+
+  const category =
+    valueOf(material["Kategori"]);
+
+  const serial =
+    valueOf(material["Serienummer"]);
+
+  const quantity =
+    valueOf(material["Antal"]);
+
+  const station =
+    valueOf(material["Station"]);
+
+  const status =
+    valueOf(material["Status"]);
+
+  const controlDate =
+    valueOf(material["Kontrolldatum"]);
+
+  const comment =
+    valueOf(material["Kommentar"]);
+
+  $("materialCard").innerHTML = `
+
+    <div class="material-card">
+
+      <div class="material-title">
+        ${escapeHtml(name)}
+      </div>
+
+      <div class="material-id">
+        ${escapeHtml(materialId)}
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Kategori</span>
+        <span class="material-value">
+          ${escapeHtml(category || "-")}
+        </span>
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Serienummer</span>
+        <span class="material-value">
+          ${escapeHtml(serial || "-")}
+        </span>
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Antal</span>
+        <span class="material-value">
+          ${escapeHtml(quantity || "-")}
+        </span>
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Station</span>
+        <span class="material-value">
+          ${escapeHtml(station || "-")}
+        </span>
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Status</span>
+        <span class="material-value">
+          <span class="status ${statusClass(status)}">
+            ${escapeHtml(status || "-")}
+          </span>
+        </span>
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Kontrolldatum</span>
+        <span class="material-value">
+          ${escapeHtml(controlDate || "-")}
+        </span>
+      </div>
+
+      <div class="material-row">
+        <span class="material-label">Kommentar</span>
+        <span class="material-value">
+          ${escapeHtml(comment || "-")}
+        </span>
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/* =====================================================
+   ACTION MODAL
+===================================================== */
+
+function askForPerson(
+  title,
+  action,
+  extraFields = ""
+) {
+
+  openModal(
+    title,
+    `
+      <div class="form-group">
+
+        <label for="actionPerson">
+          Utförd av
+        </label>
+
+        <input
+          id="actionPerson"
+          type="text"
+          placeholder="Namn">
+
+      </div>
+
+      ${extraFields}
+
+      <button
+        id="confirmActionButton"
+        class="button primary-button full">
+        Bekräfta
+      </button>
+    `
+  );
+
+  $("confirmActionButton")
+    .addEventListener(
+      "click",
+      async () => {
+
+        const person =
+          $("actionPerson").value.trim();
+
+        if (!person) {
+          showToast("Ange vem som utfört åtgärden.");
+          return;
+        }
+
+        await performAction(
+          action,
+          person
+        );
+
+      }
+    );
+}
+
+
+async function performAction(
+  action,
+  person
+) {
+
+  if (!currentMaterial) {
+    return;
+  }
+
+  const materialId =
+    valueOf(
+      currentMaterial["Material-ID"]
+    );
+
+  let path = "";
+  let body = {
+    "Material-ID": materialId,
+    "Utförd av": person
+  };
+
+  if (action === "checkin") {
+
+    path = "/checka-in";
+
+  }
+
+  else if (action === "checkout") {
+
+    path = "/checka-ut";
+
+  }
+
+  else if (action === "service") {
+
+    path = "/service";
+
+  }
+
+  else if (action === "inventory") {
+
+    path = "/inventering";
+
+  }
+
+  try {
+
+    $("confirmActionButton").disabled = true;
+
+    const result =
+      await apiPost(path, body);
+
+    closeModal();
+
+    showToast(
+      result.message ||
+      "Åtgärden är registrerad."
+    );
+
+    await loadMaterial(materialId);
+
+  } catch (error) {
+
+    showToast(error.message);
+
+    if ($("confirmActionButton")) {
+      $("confirmActionButton").disabled = false;
+    }
+
+  }
+}
+
+
+/* =====================================================
+   FLYTTA
+===================================================== */
+
+function openMoveModal() {
+
+  const currentStation =
+    valueOf(
+      currentMaterial?.["Station"]
+    );
+
+  const options = STATIONS
+    .filter(station =>
+      station !== currentStation
+    )
+    .map(station =>
+      `<option value="${escapeAttribute(station)}">
+        ${escapeHtml(station)}
+      </option>`
+    )
+    .join("");
+
+  openModal(
+    "Flytta material",
+    `
+      <label for="moveStation">
+        Till station
+      </label>
+
+      <select id="moveStation">
+
+        <option value="">
+          Välj station
+        </option>
+
+        ${options}
+
+      </select>
+
+      <label for="movePerson">
+        Utförd av
+      </label>
+
+      <input
+        id="movePerson"
+        type="text"
+        placeholder="Namn">
+
+      <button
+        id="confirmMoveButton"
+        class="button primary-button full">
+        Flytta
+      </button>
+    `
+  );
+
+  $("confirmMoveButton")
+    .addEventListener(
+      "click",
+      performMove
+    );
+}
+
+
+async function performMove() {
+
+  const station =
+    $("moveStation").value;
+
+  const person =
+    $("movePerson").value.trim();
+
+  if (!station) {
+    showToast("Välj station.");
+    return;
+  }
+
+  if (!person) {
+    showToast("Ange vem som utfört flytten.");
+    return;
+  }
+
+  try {
+
+    $("confirmMoveButton").disabled = true;
+
+    const result =
+      await apiPost(
+        "/flytta",
+        {
+          "Material-ID":
+            valueOf(
+              currentMaterial["Material-ID"]
+            ),
+
+          "Till station": station,
+
+          "Utförd av": person
+        }
+      );
+
+    closeModal();
+
+    showToast(result.message);
+
+    await loadMaterial(
+      valueOf(
+        currentMaterial["Material-ID"]
+      )
+    );
+
+  } catch (error) {
+
+    showToast(error.message);
+
+    $("confirmMoveButton").disabled = false;
+  }
+}
+
+
+/* =====================================================
+   HISTORIK
+===================================================== */
+
+async function loadHistory() {
+
+  if (!currentMaterial) {
+    return;
+  }
+
+  const materialId =
+    valueOf(
+      currentMaterial["Material-ID"]
+    );
+
+  $("historyList").innerHTML =
+    `<p class="muted">Hämtar historik...</p>`;
+
+  showView("historyView");
+
+  try {
+
+    const data =
+      await apiGet(
+        `/historik/${encodeURIComponent(materialId)}`
+      );
+
+    currentHistory =
+      data.historik || [];
+
+    renderHistory();
+
+  } catch (error) {
+
+    $("historyList").innerHTML = `
+      <div class="error-message">
+        ${escapeHtml(error.message)}
+      </div>
+    `;
+
+  }
+}
+
+
+function renderHistory() {
+
+  if (!currentHistory.length) {
+
+    $("historyList").innerHTML =
+      `<p class="muted">
+        Ingen historik registrerad.
+      </p>`;
+
+    return;
+  }
+
+  $("historyList").innerHTML =
+    currentHistory
+      .map(row => {
+
+        const action =
+          valueOf(row["Åtgärd"]);
+
+        const from =
+          valueOf(row["Från station"]);
+
+        const to =
+          valueOf(row["Till station"]);
+
+        const person =
+          valueOf(row["Utförd av"]);
+
+        const comment =
+          valueOf(row["Kommentar"]);
+
+        return `
+
+          <div class="history-item">
+
+            <div class="history-action">
+              ${escapeHtml(action || "-")}
+            </div>
+
+            <div class="history-date">
+              ${escapeHtml(
+                formatDate(row["Datum"])
+              )}
+            </div>
+
+            <div class="history-details">
+
+              ${
+                from
+                  ? `<div><strong>Från:</strong>
+                       ${escapeHtml(from)}
+                     </div>`
+                  : ""
+              }
+
+              ${
+                to
+                  ? `<div><strong>Till:</strong>
+                       ${escapeHtml(to)}
+                     </div>`
+                  : ""
+              }
+
+              ${
+                person
+                  ? `<div><strong>Utförd av:</strong>
+                       ${escapeHtml(person)}
+                     </div>`
+                  : ""
+              }
+
+              ${
+                comment
+                  ? `<div><strong>Kommentar:</strong>
+                       ${escapeHtml(comment)}
+                     </div>`
+                  : ""
+              }
+
+            </div>
+
+          </div>
+        `;
+
+      })
+      .join("");
+}
+
+
+/* =====================================================
+   NYTT MATERIAL
+===================================================== */
+
+function populateStationSelect() {
+
+  const select =
+    $("newMaterialStation");
+
+  select.innerHTML =
+    `<option value="">Välj station</option>`;
+
+  STATIONS.forEach(station => {
+
+    const option =
+      document.createElement("option");
+
+    option.value = station;
+    option.textContent = station;
+
+    select.appendChild(option);
+
+  });
+}
+
+
+async function createNewMaterial() {
+
+  const name =
+    $("newMaterialName").value.trim();
+
+  const category =
+    $("newMaterialCategory").value.trim();
+
+  const serial =
+    $("newMaterialSerial").value.trim();
+
+  const quantity =
+    $("newMaterialQuantity").value;
+
+  const station =
+    $("newMaterialStation").value;
+
+  const controlDate =
+    $("newMaterialDate").value;
+
+  const comment =
+    $("newMaterialComment").value.trim();
+
+  const message =
+    $("newMaterialMessage");
+
+  message.innerHTML = "";
+
+  if (!name) {
+
+    message.innerHTML = `
+      <div class="error-message">
+        Material måste anges.
+      </div>
+    `;
+
+    return;
+  }
+
+  if (!category) {
+
+    message.innerHTML = `
+      <div class="error-message">
+        Kategori måste anges.
+      </div>
+    `;
+
+    return;
+  }
+
+  if (!station) {
+
+    message.innerHTML = `
+      <div class="error-message">
+        Station måste väljas.
+      </div>
+    `;
+
+    return;
+  }
+
+  try {
+
+    $("createMaterialButton").disabled = true;
+
+    message.innerHTML = `
+      <div class="info-message">
+        Registrerar material...
+      </div>
+    `;
+
+    const result =
+      await apiPost(
+        "/material",
+        {
+          Material: name,
+          Kategori: category,
+          Serienummer: serial,
+          Antal: quantity,
+          Station: station,
+          Kontrolldatum: controlDate,
+          Kommentar: comment
+        }
+      );
+
+    const created =
+      result.material;
+
+    const materialId =
+      valueOf(
+        created["Material-ID"]
+      );
+
+    message.innerHTML = `
+      <div class="success-message">
+
+        <strong>Materialet är registrerat.</strong>
+
+        <div style="margin-top:8px;font-size:20px;">
+          ${escapeHtml(materialId)}
+        </div>
+
+      </div>
+    `;
+
+    showToast(
+      `Material ${materialId} skapat.`
+    );
+
+    $("newMaterialName").value = "";
+    $("newMaterialCategory").value = "";
+    $("newMaterialSerial").value = "";
+    $("newMaterialQuantity").value = "1";
+    $("newMaterialStation").value = "";
+    $("newMaterialDate").value = "";
+    $("newMaterialComment").value = "";
+
+  } catch (error) {
+
+    message.innerHTML = `
+      <div class="error-message">
+        ${escapeHtml(error.message)}
+      </div>
+    `;
+
+  } finally {
+
+    $("createMaterialButton").disabled = false;
+
+  }
+}
+
+
+/* =====================================================
+   ALLA MATERIAL
+===================================================== */
+
+async function loadAllMaterials() {
+
+  $("materialList").innerHTML =
+    `<p class="muted">Hämtar material...</p>`;
+
+  showView("allMaterialsView");
+
+  try {
+
+    const data =
+      await apiGet("/material-list");
+
+    materialCache =
+      data.material || [];
+
+    renderMaterialList();
+
+  } catch (error) {
+
+    /*
+      Worker-versionen vi precis byggde har ännu
+      ingen /material-list endpoint.
+
+      Därför visas ett tydligt meddelande istället
+      för ett tyst fel.
+    */
+
+    $("materialList").innerHTML = `
+      <div class="info-message">
+        Funktionen Alla material kopplas in i nästa steg.
+      </div>
+    `;
+
+  }
+}
+
+
+function renderMaterialList() {
+
+  const search =
+    $("materialListSearch")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const filtered =
+    materialCache.filter(material => {
+
+      const text = [
+
+        valueOf(material["Material-ID"]),
+        valueOf(material["Material"]),
+        valueOf(material["Kategori"]),
+        valueOf(material["Station"]),
+        valueOf(material["Status"])
+
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return text.includes(search);
+
+    });
+
+  if (!filtered.length) {
+
+    $("materialList").innerHTML =
+      `<p class="muted">
+        Inget material hittades.
+      </p>`;
+
+    return;
+  }
+
+  $("materialList").innerHTML =
+    filtered
+      .map(material => {
+
+        const id =
+          valueOf(material["Material-ID"]);
+
+        const name =
+          valueOf(material["Material"]);
+
+        const station =
+          valueOf(material["Station"]);
+
+        const status =
+          valueOf(material["Status"]);
+
+        return `
+
+          <button
+            class="material-list-item"
+            data-material-id="${escapeAttribute(id)}">
+
+            <strong>
+              ${escapeHtml(id)}
+            </strong>
+
+            <span>
+              ${escapeHtml(name)}
+            </span>
+
+            <span>
+              ${escapeHtml(station)}
+              ·
+              ${escapeHtml(status)}
+            </span>
+
+          </button>
+        `;
+
+      })
+      .join("");
+
+  document
+    .querySelectorAll(".material-list-item")
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          loadMaterial(
+            button.dataset.materialId
+          );
+
+        }
+      );
+
+    });
+}
+
+
+/* =====================================================
+   STATIONER
+===================================================== */
+
+function renderStations() {
+
+  $("stationList").innerHTML =
+    STATIONS
+      .map(station => `
+
+        <div class="station-item">
+
+          <div class="station-name">
+            🏢 ${escapeHtml(station)}
+          </div>
+
+          <div class="station-count">
+            Station
+          </div>
+
+        </div>
+
+      `)
+      .join("");
+
+}
+
+
+/* =====================================================
+   QR SCANNER
+===================================================== */
+
+async function startScanner(purpose = "normal") {
+
+  scannerPurpose = purpose;
+
+  showView("scannerView");
+
+  $("scannerMessage").textContent =
+    "Startar kamera...";
+
+  try {
+
+    if (scanner) {
+      await stopScanner();
+    }
+
+    scanner =
+      new Html5Qrcode("reader");
+
+    const config = {
+      fps: 10,
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+    };
+
+    await scanner.start(
+      {
+        facingMode: "environment"
+      },
+      config,
+      decodedText => {
+
+        handleQrResult(decodedText);
+
+      },
+      () => {}
+    );
+
+    $("scannerMessage").textContent =
+      "Rikta kameran mot QR-koden.";
+
+  } catch (error) {
+
+    $("scannerMessage").innerHTML = `
+      <span class="error-message">
+        Kunde inte starta kameran.
+        ${escapeHtml(error.message)}
+      </span>
+    `;
+
+  }
+}
+
+
+async function stopScanner() {
+
+  if (!scanner) {
+    return;
+  }
+
+  try {
+    await scanner.stop();
+  } catch {}
+
+  try {
+    await scanner.clear();
+  } catch {}
+
+  scanner = null;
+}
+
+
+async function handleQrResult(decodedText) {
+
+  await stopScanner();
+
+  let materialId =
+    String(decodedText).trim();
+
+  /*
+    Om QR-koden senare innehåller en komplett URL
+    försöker vi läsa Material-ID från URL:en.
+  */
+
+  try {
+
+    if (
+      materialId.startsWith("http://") ||
+      materialId.startsWith("https://")
+    ) {
+
+      const url =
+        new URL(materialId);
+
+      const id =
+        url.searchParams.get("id") ||
+        url.searchParams.get("material");
+
+      if (id) {
+        materialId = id;
+      }
+
+    }
+
+  } catch {}
+
+  await loadMaterial(materialId);
+}
+
+
+/* =====================================================
+   INVENTERING
+===================================================== */
+
+$("inventorySearchButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      scannerPurpose = "inventory";
+
+      showView("searchView");
+
+    }
+  );
+
+
+$("inventoryScanButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      startScanner("inventory");
+
+    }
+  );
+
+
+/* =====================================================
+   ESCAPE
+===================================================== */
 
 function escapeHtml(value) {
 
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
+
+
+/* =====================================================
+   STARTSIDA
+===================================================== */
+
+$("scanButton")
+  .addEventListener(
+    "click",
+    () => startScanner("normal")
+  );
+
+
+$("searchButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      scannerPurpose = "normal";
+
+      $("materialSearch").value = "";
+
+      showView("searchView");
+
+      setTimeout(
+        () => $("materialSearch").focus(),
+        100
+      );
+
+    }
+  );
+
+
+$("searchScanButton")
+  .addEventListener(
+    "click",
+    () => startScanner("normal")
+  );
+
+
+$("newMaterialButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("newMaterialMessage").innerHTML = "";
+
+      showView("newMaterialView");
+
+    }
+  );
+
+
+$("allMaterialsButton")
+  .addEventListener(
+    "click",
+    loadAllMaterials
+  );
+
+
+$("stationsButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      renderStations();
+
+      showView("stationsView");
+
+    }
+  );
+
+
+$("inventoryButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      showView("inventoryView");
+
+    }
+  );
+
+
+/* =====================================================
+   SÖK
+===================================================== */
+
+$("searchMaterialButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      loadMaterial(
+        $("materialSearch").value
+      );
+
+    }
+  );
+
+
+$("materialSearch")
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+
+        loadMaterial(
+          $("materialSearch").value
+        );
+
+      }
+
+    }
+  );
+
+
+/* =====================================================
+   MATERIAL ACTIONS
+===================================================== */
+
+$("checkinButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      askForPerson(
+        "Checka in material",
+        "checkin"
+      );
+
+    }
+  );
+
+
+$("checkoutButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      askForPerson(
+        "Checka ut material",
+        "checkout"
+      );
+
+    }
+  );
+
+
+$("serviceButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      askForPerson(
+        "Skicka material till service",
+        "service"
+      );
+
+    }
+  );
+
+
+$("materialInventoryButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      askForPerson(
+        "Registrera inventering",
+        "inventory"
+      );
+
+    }
+  );
+
+
+$("moveButton")
+  .addEventListener(
+    "click",
+    openMoveModal
+  );
+
+
+$("historyButton")
+  .addEventListener(
+    "click",
+    loadHistory
+  );
+
+
+$("newSearchButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      $("materialSearch").value = "";
+
+      showView("searchView");
+
+      setTimeout(
+        () => $("materialSearch").focus(),
+        100
+      );
+
+    }
+  );
+
+
+/* =====================================================
+   MATERIAL TILLBAKA
+===================================================== */
+
+$("materialBackButton")
+  .addEventListener(
+    "click",
+    () => showView("homeView")
+  );
+
+
+$("historyBackButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      showView("materialView");
+
+    }
+  );
+
+
+$("stopScannerButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      await stopScanner();
+
+      showView("homeView");
+
+    }
+  );
+
+
+/* =====================================================
+   GENERELLA TILLBAKA-KNAPPAR
+===================================================== */
+
+document
+  .querySelectorAll("[data-back]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      async () => {
+
+        await stopScanner();
+
+        showView("homeView");
+
+      }
+    );
+
+  });
+
+
+/* =====================================================
+   NYTT MATERIAL
+===================================================== */
+
+$("createMaterialButton")
+  .addEventListener(
+    "click",
+    createNewMaterial
+  );
+
+
+/* =====================================================
+   ALLA MATERIAL SÖK
+===================================================== */
+
+$("materialListSearch")
+  .addEventListener(
+    "input",
+    renderMaterialList
+  );
+
+
+/* =====================================================
+   INIT
+===================================================== */
+
+populateStationSelect();
+
+$("newMaterialDate").value =
+  new Date()
+    .toISOString()
+    .slice(0, 10);
