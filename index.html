@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Materialhantering – Räddningstjänsten</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- QR-skanner -->
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="app.js" defer></script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div>
+      <h1>Material</h1>
+      <p>Sörmlandskustens Räddningstjänst</p>
+    </div>
+
+    <div class="header-icon">🚒</div>
+  </header>
+
+  <main class="container">
+
+    <!-- START -->
+    <section id="startSection" class="section">
+
+      <div class="search-box">
+        <input
+          id="materialSearch"
+          type="text"
+          placeholder="Material-ID"
+          autocomplete="off"
+          autocapitalize="characters"
+        >
+
+        <button id="searchButton" class="primary-button">
+          🔍 Sök
+        </button>
+      </div>
+
+      <button id="scanButton" class="scan-button">
+        📷 Skanna QR-kod
+      </button>
+
+      <div id="scannerContainer" class="scanner-container hidden">
+        <div id="reader"></div>
+
+        <button id="closeScannerButton" class="secondary-button">
+          Stäng skanner
+        </button>
+      </div>
+
+      <div id="message" class="message hidden"></div>
+
+    </section>
+
+
+    <!-- MATERIAL -->
+    <section id="materialSection" class="section hidden">
+
+      <div class="material-card">
+
+        <div class="material-header">
+          <div>
+            <div id="materialId" class="material-id"></div>
+            <h2 id="materialName"></h2>
+          </div>
+
+          <div id="statusBadge" class="status-badge"></div>
+        </div>
+
+        <div class="material-details">
+
+          <div class="detail">
+            <span>Kategori</span>
+            <strong id="materialCategory">–</strong>
+          </div>
+
+          <div class="detail">
+            <span>Serienummer</span>
+            <strong id="materialSerial">–</strong>
+          </div>
+
+          <div class="detail">
+            <span>Antal</span>
+            <strong id="materialQuantity">–</strong>
+          </div>
+
+          <div class="detail">
+            <span>Station</span>
+            <strong id="materialStation">–</strong>
+          </div>
+
+          <div class="detail">
+            <span>Kontrolldatum</span>
+            <strong id="materialControlDate">–</strong>
+          </div>
+
+          <div class="detail">
+            <span>Kommentar</span>
+            <strong id="materialComment">–</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ÅTGÄRDER -->
+
+      <div class="actions-card">
+
+        <h3>Åtgärder</h3>
+
+        <div class="action-grid">
+
+          <button
+            id="checkInButton"
+            class="action-button checkin"
+          >
+            ↩️
+            <span>CHECKA IN</span>
+          </button>
+
+          <button
+            id="checkOutButton"
+            class="action-button checkout"
+          >
+            📤
+            <span>CHECKA UT</span>
+          </button>
+
+          <button
+            id="moveButton"
+            class="action-button move"
+          >
+            🚚
+            <span>FLYTTA</span>
+          </button>
+
+          <button
+            id="serviceButton"
+            class="action-button service"
+          >
+            🔧
+            <span>SERVICE</span>
+          </button>
+
+          <button
+            id="inventoryButton"
+            class="action-button inventory"
+          >
+            📋
+            <span>INVENTERING</span>
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- HISTORIK -->
+
+      <div class="history-card">
+
+        <div class="history-header">
+          <h3>Historik</h3>
+
+          <button
+            id="historyButton"
+            class="small-button"
+          >
+            Visa historik
+          </button>
+        </div>
+
+        <div id="historyContainer" class="history-container hidden">
+        </div>
+
+      </div>
+
+
+      <button
+        id="newSearchButton"
+        class="secondary-button full-width"
+      >
+        🔍 Ny sökning
+      </button>
+
+    </section>
+
+  </main>
+
+
+  <!-- MODAL -->
+
+  <div id="modal" class="modal hidden">
+
+    <div class="modal-content">
+
+      <button id="closeModalButton" class="modal-close">
+        ×
+      </button>
+
+      <h2 id="modalTitle"></h2>
+
+      <div id="modalBody"></div>
+
+      <div class="modal-buttons">
+
+        <button
+          id="cancelModalButton"
+          class="secondary-button"
+        >
+          Avbryt
+        </button>
+
+        <button
+          id="confirmModalButton"
+          class="primary-button"
+        >
+          Bekräfta
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- LOADING -->
+
+  <div id="loading" class="loading hidden">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Arbetar...</p>
+    </div>
+  </div>
+
+</body>
+</html>
