@@ -2,249 +2,392 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#b40000">
 
-  <title>Materialhantering – Räddningstjänsten</title>
+  <title>ROS Material</title>
 
   <link rel="stylesheet" href="style.css">
 
-  <!-- QR-skanner -->
-  <script src="https://unpkg.com/html5-qrcode" defer></script>
-  <script src="app.js" defer></script>
+  <script
+    src="https://unpkg.com/html5-qrcode"
+    defer>
+  </script>
+
+  <script
+    src="app.js"
+    defer>
+  </script>
 </head>
 
 <body>
 
-  <header class="topbar">
-    <div>
+<header class="topbar">
+  <div>
+    <div class="brand">SÖRMLANDSKUSTENS RÄDDNINGSTJÄNST</div>
+    <div class="subtitle">Materialhantering</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- STARTSIDA -->
+
+  <section id="homeView" class="view active">
+
+    <div class="hero">
       <h1>Material</h1>
-      <p>Sörmlandskustens Räddningstjänst</p>
+      <p>Hantera och kontrollera räddningstjänstens material.</p>
     </div>
 
-    <div class="header-icon">🚒</div>
-  </header>
+    <div class="menu-grid">
 
-  <main class="container">
+      <button class="menu-button primary" id="scanButton">
+        <span class="menu-icon">📷</span>
+        <span>Skanna QR</span>
+      </button>
 
-    <!-- START -->
-    <section id="startSection" class="section">
+      <button class="menu-button" id="searchButton">
+        <span class="menu-icon">🔍</span>
+        <span>Sök material</span>
+      </button>
 
-      <div class="search-box">
+      <button class="menu-button" id="newMaterialButton">
+        <span class="menu-icon">➕</span>
+        <span>Nytt material</span>
+      </button>
+
+      <button class="menu-button" id="allMaterialsButton">
+        <span class="menu-icon">📦</span>
+        <span>Alla material</span>
+      </button>
+
+      <button class="menu-button" id="stationsButton">
+        <span class="menu-icon">🏢</span>
+        <span>Stationer</span>
+      </button>
+
+      <button class="menu-button" id="inventoryButton">
+        <span class="menu-icon">📋</span>
+        <span>Inventering</span>
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- SÖK -->
+
+  <section id="searchView" class="view">
+
+    <button class="back-button" data-back>← Tillbaka</button>
+
+    <div class="card">
+
+      <h2>Sök material</h2>
+
+      <label for="materialSearch">
+        Material-ID
+      </label>
+
+      <div class="search-row">
+
         <input
           id="materialSearch"
           type="text"
-          placeholder="Material-ID"
-          autocomplete="off"
-          autocapitalize="characters"
-        >
+          placeholder="SKRTJ-00001"
+          autocomplete="off">
 
-        <button id="searchButton" class="primary-button">
-          🔍 Sök
+        <button id="searchMaterialButton" class="button primary-button">
+          Sök
         </button>
+
       </div>
 
-      <button id="scanButton" class="scan-button">
-        📷 Skanna QR-kod
+      <button id="searchScanButton" class="secondary-button full">
+        📷 Skanna QR
       </button>
 
-      <div id="scannerContainer" class="scanner-container hidden">
-        <div id="reader"></div>
+    </div>
 
-        <button id="closeScannerButton" class="secondary-button">
-          Stäng skanner
-        </button>
-      </div>
-
-      <div id="message" class="message hidden"></div>
-
-    </section>
+  </section>
 
 
-    <!-- MATERIAL -->
-    <section id="materialSection" class="section hidden">
+  <!-- QR -->
 
-      <div class="material-card">
+  <section id="scannerView" class="view">
 
-        <div class="material-header">
-          <div>
-            <div id="materialId" class="material-id"></div>
-            <h2 id="materialName"></h2>
-          </div>
+    <button class="back-button" data-back>← Tillbaka</button>
 
-          <div id="statusBadge" class="status-badge"></div>
-        </div>
+    <div class="card">
 
-        <div class="material-details">
+      <h2>Skanna QR-kod</h2>
 
-          <div class="detail">
-            <span>Kategori</span>
-            <strong id="materialCategory">–</strong>
-          </div>
+      <div id="reader"></div>
 
-          <div class="detail">
-            <span>Serienummer</span>
-            <strong id="materialSerial">–</strong>
-          </div>
+      <p id="scannerMessage" class="muted">
+        Rikta kameran mot materialets QR-kod.
+      </p>
 
-          <div class="detail">
-            <span>Antal</span>
-            <strong id="materialQuantity">–</strong>
-          </div>
+      <button id="stopScannerButton" class="secondary-button full">
+        Stoppa kamera
+      </button>
 
-          <div class="detail">
-            <span>Station</span>
-            <strong id="materialStation">–</strong>
-          </div>
+    </div>
 
-          <div class="detail">
-            <span>Kontrolldatum</span>
-            <strong id="materialControlDate">–</strong>
-          </div>
-
-          <div class="detail">
-            <span>Kommentar</span>
-            <strong id="materialComment">–</strong>
-          </div>
-
-        </div>
-
-      </div>
+  </section>
 
 
-      <!-- ÅTGÄRDER -->
+  <!-- MATERIAL -->
 
-      <div class="actions-card">
+  <section id="materialView" class="view">
 
-        <h3>Åtgärder</h3>
+    <button class="back-button" id="materialBackButton">
+      ← Tillbaka
+    </button>
 
-        <div class="action-grid">
+    <div id="materialCard"></div>
 
-          <button
-            id="checkInButton"
-            class="action-button checkin"
-          >
-            ↩️
-            <span>CHECKA IN</span>
-          </button>
+    <div class="action-grid">
 
-          <button
-            id="checkOutButton"
-            class="action-button checkout"
-          >
-            📤
-            <span>CHECKA UT</span>
-          </button>
+      <button class="action-button checkin" id="checkinButton">
+        CHECKA IN
+      </button>
 
-          <button
-            id="moveButton"
-            class="action-button move"
-          >
-            🚚
-            <span>FLYTTA</span>
-          </button>
+      <button class="action-button checkout" id="checkoutButton">
+        CHECKA UT
+      </button>
 
-          <button
-            id="serviceButton"
-            class="action-button service"
-          >
-            🔧
-            <span>SERVICE</span>
-          </button>
+      <button class="action-button move" id="moveButton">
+        FLYTTA
+      </button>
 
-          <button
-            id="inventoryButton"
-            class="action-button inventory"
-          >
-            📋
-            <span>INVENTERING</span>
-          </button>
+      <button class="action-button service" id="serviceButton">
+        SERVICE
+      </button>
 
-        </div>
+      <button class="action-button inventory" id="materialInventoryButton">
+        INVENTERING
+      </button>
 
-      </div>
+    </div>
+
+    <button id="historyButton" class="secondary-button full">
+      📜 Historik
+    </button>
+
+    <button id="newSearchButton" class="secondary-button full">
+      🔍 Ny sökning
+    </button>
+
+  </section>
 
 
-      <!-- HISTORIK -->
+  <!-- NYTT MATERIAL -->
 
-      <div class="history-card">
+  <section id="newMaterialView" class="view">
 
-        <div class="history-header">
-          <h3>Historik</h3>
+    <button class="back-button" data-back>← Tillbaka</button>
 
-          <button
-            id="historyButton"
-            class="small-button"
-          >
-            Visa historik
-          </button>
-        </div>
+    <div class="card">
 
-        <div id="historyContainer" class="history-container hidden">
-        </div>
+      <h2>➕ Nytt material</h2>
 
-      </div>
+      <p class="muted">
+        Material-ID skapas automatiskt.
+      </p>
 
+      <label for="newMaterialName">
+        Material
+      </label>
+
+      <input
+        id="newMaterialName"
+        type="text"
+        placeholder="Ex. Slang 42 mm">
+
+      <label for="newMaterialCategory">
+        Kategori
+      </label>
+
+      <input
+        id="newMaterialCategory"
+        type="text"
+        placeholder="Ex. Slang">
+
+      <label for="newMaterialSerial">
+        Serienummer
+      </label>
+
+      <input
+        id="newMaterialSerial"
+        type="text"
+        placeholder="Valfritt">
+
+      <label for="newMaterialQuantity">
+        Antal
+      </label>
+
+      <input
+        id="newMaterialQuantity"
+        type="number"
+        min="1"
+        value="1">
+
+      <label for="newMaterialStation">
+        Station
+      </label>
+
+      <select id="newMaterialStation">
+        <option value="">Välj station</option>
+      </select>
+
+      <label for="newMaterialDate">
+        Kontrolldatum
+      </label>
+
+      <input
+        id="newMaterialDate"
+        type="date">
+
+      <label for="newMaterialComment">
+        Kommentar
+      </label>
+
+      <textarea
+        id="newMaterialComment"
+        rows="4"
+        placeholder="Valfritt"></textarea>
 
       <button
-        id="newSearchButton"
-        class="secondary-button full-width"
-      >
-        🔍 Ny sökning
+        id="createMaterialButton"
+        class="button primary-button full">
+        ➕ Registrera material
       </button>
 
-    </section>
+      <div id="newMaterialMessage"></div>
 
-  </main>
+    </div>
+
+  </section>
 
 
-  <!-- MODAL -->
+  <!-- ALLA MATERIAL -->
 
-  <div id="modal" class="modal hidden">
+  <section id="allMaterialsView" class="view">
 
-    <div class="modal-content">
+    <button class="back-button" data-back>← Tillbaka</button>
 
-      <button id="closeModalButton" class="modal-close">
-        ×
-      </button>
+    <div class="card">
 
-      <h2 id="modalTitle"></h2>
+      <h2>📦 Alla material</h2>
 
-      <div id="modalBody"></div>
+      <input
+        id="materialListSearch"
+        type="search"
+        placeholder="Sök material...">
 
-      <div class="modal-buttons">
-
-        <button
-          id="cancelModalButton"
-          class="secondary-button"
-        >
-          Avbryt
-        </button>
-
-        <button
-          id="confirmModalButton"
-          class="primary-button"
-        >
-          Bekräfta
-        </button>
-
+      <div id="materialList">
+        <p class="muted">Hämtar material...</p>
       </div>
 
     </div>
 
-  </div>
+  </section>
 
 
-  <!-- LOADING -->
+  <!-- STATIONER -->
 
-  <div id="loading" class="loading hidden">
-    <div class="loading-box">
-      <div class="spinner"></div>
-      <p>Arbetar...</p>
+  <section id="stationsView" class="view">
+
+    <button class="back-button" data-back>← Tillbaka</button>
+
+    <div class="card">
+
+      <h2>🏢 Stationer</h2>
+
+      <div id="stationList"></div>
+
     </div>
+
+  </section>
+
+
+  <!-- INVENTERING -->
+
+  <section id="inventoryView" class="view">
+
+    <button class="back-button" data-back>← Tillbaka</button>
+
+    <div class="card">
+
+      <h2>📋 Inventering</h2>
+
+      <p class="muted">
+        Sök eller skanna material för att registrera en inventering.
+      </p>
+
+      <button
+        id="inventoryScanButton"
+        class="button primary-button full">
+        📷 Skanna QR
+      </button>
+
+      <button
+        id="inventorySearchButton"
+        class="secondary-button full">
+        🔍 Sök material
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- HISTORIK -->
+
+  <section id="historyView" class="view">
+
+    <button class="back-button" id="historyBackButton">
+      ← Tillbaka
+    </button>
+
+    <div class="card">
+
+      <h2>📜 Historik</h2>
+
+      <div id="historyList">
+        <p class="muted">Hämtar historik...</p>
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<!-- MODAL -->
+
+<div id="modal" class="modal hidden">
+
+  <div class="modal-box">
+
+    <button id="closeModal" class="modal-close">
+      ×
+    </button>
+
+    <h2 id="modalTitle"></h2>
+
+    <div id="modalContent"></div>
+
   </div>
+
+</div>
+
+
+<div id="toast" class="toast"></div>
 
 </body>
 </html>
