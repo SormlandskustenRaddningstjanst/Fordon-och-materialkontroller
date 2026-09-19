@@ -253,6 +253,96 @@ async function loadMaterial(materialId) {
 }
 
 
+function getQrImageUrl(materialId) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(materialId)}`;
+}
+
+function showMaterialQr(materialId, materialName = "Material") {
+  const safeId = String(materialId || "").trim();
+  const safeName = String(materialName || "Material");
+
+  if (!safeId) {
+    showToast("Material-ID saknas.");
+    return;
+  }
+
+  const qrUrl = getQrImageUrl(safeId);
+
+  openModal(
+    "QR-kod",
+    `
+      <div class="qr-material-print" style="text-align:center;">
+        <h3>${escapeHtml(safeName)}</h3>
+        <p style="font-weight:700;">${escapeHtml(safeId)}</p>
+        <img
+          src="${qrUrl}"
+          alt="QR-kod för ${escapeHtml(safeId)}"
+          style="display:block;width:320px;max-width:100%;margin:16px auto;"
+        >
+        <button id="printMaterialQrButton" type="button">
+          Skriv ut QR-kod
+        </button>
+      </div>
+    `
+  );
+
+  const printButton = $("printMaterialQrButton");
+
+  if (printButton) {
+    printButton.addEventListener("click", () => {
+      printMaterialQr(safeId, safeName, qrUrl);
+    });
+  }
+}
+
+function printMaterialQr(materialId, materialName, qrUrl) {
+  const printWindow = window.open("", "_blank", "width=700,height=800");
+
+  if (!printWindow) {
+    showToast("Utskriftsfönstret blockerades av webbläsaren.");
+    return;
+  }
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="sv">
+      <head>
+        <meta charset="utf-8">
+        <title>QR-kod - ${escapeHtml(materialId)}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 32px;
+          }
+          img {
+            display: block;
+            width: 320px;
+            max-width: 100%;
+            margin: 24px auto;
+          }
+          .id {
+            font-size: 20px;
+            font-weight: bold;
+          }
+          @media print {
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(materialName)}</h1>
+        <div class="id">${escapeHtml(materialId)}</div>
+        <img src="${qrUrl}" alt="QR-kod för ${escapeHtml(materialId)}">
+        <button onclick="window.print()">Skriv ut</button>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+}
+
 function renderMaterial() {
 
   const material = currentMaterial;
@@ -298,6 +388,15 @@ function renderMaterial() {
 
       <div class="material-id">
         ${escapeHtml(materialId)}
+      </div>
+
+      <div style="margin:14px 0;">
+        <button
+          type="button"
+          onclick="showMaterialQr('${escapeHtml(materialId).replace("'", "\'")}', '${escapeHtml(name).replace("'", "\'")}')"
+        >
+          Visa QR-kod / Skriv ut
+        </button>
       </div>
 
       <div class="material-row">
