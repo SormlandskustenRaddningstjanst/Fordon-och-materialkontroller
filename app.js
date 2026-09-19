@@ -1,3 +1,4 @@
+```
 const API_URL =
   "https://ros-material-api.peter-hasselberg.workers.dev";
 
@@ -1091,16 +1092,61 @@ function renderMaterialList() {
     const station = valueOf(material["Station"]) || "-";
     const status = valueOf(material["Status"]) || "-";
 
+    const safeId = escapeHtml(id);
+
     return `
-      <div class="material-card">
+      <div
+        class="material-card"
+        role="button"
+        tabindex="0"
+        data-material-id="${safeId}"
+        title="Öppna material"
+        style="cursor: pointer;"
+      >
         <h3>${escapeHtml(name)}</h3>
         <p><strong>Material-ID:</strong> ${escapeHtml(id)}</p>
         <p><strong>Station:</strong> ${escapeHtml(station)}</p>
         <p><strong>Status:</strong> ${escapeHtml(status)}</p>
+        <p class="muted">Tryck för att öppna materialet</p>
       </div>
     `;
   }).join("");
 }
+
+/* Öppna material från listan genom klick eller Enter */
+$("materialList").addEventListener("click", event => {
+  const card = event.target.closest("[data-material-id]");
+
+  if (!card) {
+    return;
+  }
+
+  const materialId = card.dataset.materialId;
+
+  if (materialId) {
+    loadMaterial(materialId);
+  }
+});
+
+$("materialList").addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const card = event.target.closest("[data-material-id]");
+
+  if (!card) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const materialId = card.dataset.materialId;
+
+  if (materialId) {
+    loadMaterial(materialId);
+  }
+});
 
 /* =====================================================
    STATIONER
@@ -1590,3 +1636,4 @@ $("newMaterialDate").value =
   new Date()
     .toISOString()
     .slice(0, 10);
+```
