@@ -1107,29 +1107,56 @@ function renderMaterialList() {
 
         return `
 
-          <button
-            class="material-list-item"
-            data-material-id="${escapeAttribute(id)}">
+          <div class="material-list-row" style="display:flex; gap:8px; align-items:stretch; margin-bottom:8px;">
 
-            <strong>
-              ${escapeHtml(id)}
-            </strong>
+            <button
+              class="material-list-item"
+              data-material-id="${escapeAttribute(id)}"
+              style="flex:1;">
 
-            <span>
-              ${escapeHtml(name)}
-            </span>
+              <strong>
+                ${escapeHtml(id)}
+              </strong>
 
-            <span>
-              ${escapeHtml(station)}
-              ·
-              ${escapeHtml(status)}
-            </span>
+              <span>
+                ${escapeHtml(name)}
+              </span>
 
-          </button>
+              <span>
+                ${escapeHtml(station)}
+                ·
+                ${escapeHtml(status)}
+              </span>
+
+            </button>
+
+            <button
+              type="button"
+              class="material-qr-button"
+              data-qr-material-id="${escapeAttribute(id)}"
+              data-qr-material-name="${escapeAttribute(name)}"
+              title="Visa och skriv ut QR-kod">
+              QR
+            </button>
+
+          </div>
         `;
 
       })
       .join("");
+
+  document
+    .querySelectorAll(".material-qr-button")
+    .forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+
+        showMaterialQr(
+          button.dataset.qrMaterialId,
+          button.dataset.qrMaterialName
+        );
+      });
+    });
 
   document
     .querySelectorAll(".material-list-item")
