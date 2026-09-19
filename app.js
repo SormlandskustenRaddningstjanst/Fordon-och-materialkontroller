@@ -767,6 +767,16 @@ function populateStationSelect() {
 }
 
 
+function generateMaterialId() {
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0");
+
+  return `SKRTJ-${timestamp}${random}`;
+}
+
+
 async function createNewMaterial() {
 
   const name =
@@ -842,12 +852,14 @@ async function createNewMaterial() {
       await apiPost(
         "/material",
         {
+          "Material-ID": generateMaterialId(),
           Material: name,
           Kategori: category,
           Serienummer: serial,
-          Antal: quantity,
+          Antal: Number(quantity || 1),
           Station: station,
-          Kontrolldatum: controlDate,
+          Status: "Tillgänglig",
+          Kontrolldatum: controlDate || null,
           Kommentar: comment
         }
       );
