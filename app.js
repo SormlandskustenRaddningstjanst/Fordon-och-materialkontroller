@@ -1028,7 +1028,7 @@ async function loadAllMaterials() {
       await apiGet("/material-list");
 
     materialCache =
-      data.material || [];
+      data.materials || data.material || [];
 
     renderMaterialList();
 
@@ -1043,8 +1043,8 @@ async function loadAllMaterials() {
     */
 
     $("materialList").innerHTML = `
-      <div class="info-message">
-        Funktionen Alla material kopplas in i nästa steg.
+      <div class="error-message">
+        ${escapeHtml(error.message)}
       </div>
     `;
 
