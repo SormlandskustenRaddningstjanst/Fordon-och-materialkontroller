@@ -1,4 +1,3 @@
-```
 const API_URL =
   "https://ros-material-api.peter-hasselberg.workers.dev";
 
@@ -1709,4 +1708,3 @@ $("newMaterialDate").value =
   new Date()
     .toISOString()
     .slice(0, 10);
-```
