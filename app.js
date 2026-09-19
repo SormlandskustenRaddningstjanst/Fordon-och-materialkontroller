@@ -1028,7 +1028,7 @@ async function loadAllMaterials() {
       await apiGet("/material-list");
 
     materialCache =
-      data.material || [];
+      data.materials || [];
 
     renderMaterialList();
 
