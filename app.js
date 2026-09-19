@@ -1077,10 +1077,11 @@ function renderMaterialList() {
     });
 
   if (!filtered.length) {
+    const count = Array.isArray(materialCache) ? materialCache.length : 0;
     $("materialList").innerHTML =
-      `<p class="muted">Inget material hittades. Antal från API: ${
-        Array.isArray(materialCache) ? materialCache.length : 0
-      }</p>`;
+      "<p class=\"muted\">Inget material hittades. Antal från API: " +
+      count +
+      "</p>";
     return;
   }
 
