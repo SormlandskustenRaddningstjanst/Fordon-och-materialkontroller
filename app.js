@@ -1027,8 +1027,13 @@ async function loadAllMaterials() {
     const data =
       await apiGet("/material-list");
 
-    materialCache =
-      data.materials || [];
+    materialCache = Array.isArray(data.materials)
+      ? data.materials
+      : (Array.isArray(data.material) ? data.material : []);
+
+    if (!Array.isArray(data.materials) && !Array.isArray(data.material)) {
+      throw new Error("API-svaret innehåller ingen materials-lista.");
+    }
 
     renderMaterialList();
 
@@ -1044,7 +1049,7 @@ async function loadAllMaterials() {
 
     $("materialList").innerHTML = `
       <div class="info-message">
-        Funktionen Alla material kopplas in i nästa steg.
+        Kunde inte läsa material: ${escapeHtml(error.message)}
       </div>
     `;
 
