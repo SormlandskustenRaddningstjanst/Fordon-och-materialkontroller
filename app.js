@@ -1058,129 +1058,48 @@ async function loadAllMaterials() {
 
 
 function renderMaterialList() {
+  const searchInput = $("materialListSearch");
+  const search = searchInput
+    ? (searchInput.value || "").trim().toLowerCase()
+    : "";
 
-  const search =
-    $("materialListSearch")
-      .value
-      .trim()
-      .toLowerCase();
-
-  const filtered =
-    materialCache.filter(material => {
-
+  const filtered = (Array.isArray(materialCache) ? materialCache : [])
+    .filter(material => {
       const text = [
-
         valueOf(material["Material-ID"]),
         valueOf(material["Material"]),
         valueOf(material["Kategori"]),
         valueOf(material["Station"]),
         valueOf(material["Status"])
-
-      ]
-        .join(" ")
-        .toLowerCase();
+      ].join(" ").toLowerCase();
 
       return text.includes(search);
-
     });
 
   if (!filtered.length) {
-
     $("materialList").innerHTML =
-      `<p class="muted">
-        Inget material hittades.
-      </p>`;
-
+      `<p class="muted">Inget material hittades. Antal från API: ${
+        Array.isArray(materialCache) ? materialCache.length : 0
+      }</p>`;
     return;
   }
 
-  $("materialList").innerHTML =
-    filtered
-      .map(material => {
+  $("materialList").innerHTML = filtered.map(material => {
+    const id = valueOf(material["Material-ID"]);
+    const name = valueOf(material["Material"]) || "Namnlöst material";
+    const station = valueOf(material["Station"]) || "-";
+    const status = valueOf(material["Status"]) || "-";
 
-        const id =
-          valueOf(material["Material-ID"]);
-
-        const name =
-          valueOf(material["Material"]);
-
-        const station =
-          valueOf(material["Station"]);
-
-        const status =
-          valueOf(material["Status"]);
-
-        return `
-
-          <div class="material-list-row" style="display:flex; gap:8px; align-items:stretch; margin-bottom:8px;">
-
-            <button
-              class="material-list-item"
-              data-material-id="${escapeAttribute(id)}"
-              style="flex:1;">
-
-              <strong>
-                ${escapeHtml(id)}
-              </strong>
-
-              <span>
-                ${escapeHtml(name)}
-              </span>
-
-              <span>
-                ${escapeHtml(station)}
-                ·
-                ${escapeHtml(status)}
-              </span>
-
-            </button>
-
-            <button
-              type="button"
-              class="material-qr-button"
-              data-qr-material-id="${escapeAttribute(id)}"
-              data-qr-material-name="${escapeAttribute(name)}"
-              title="Visa och skriv ut QR-kod">
-              QR
-            </button>
-
-          </div>
-        `;
-
-      })
-      .join("");
-
-  document
-    .querySelectorAll(".material-qr-button")
-    .forEach(button => {
-      button.addEventListener("click", event => {
-        event.stopPropagation();
-
-        showMaterialQr(
-          button.dataset.qrMaterialId,
-          button.dataset.qrMaterialName
-        );
-      });
-    });
-
-  document
-    .querySelectorAll(".material-list-item")
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          loadMaterial(
-            button.dataset.materialId
-          );
-
-        }
-      );
-
-    });
+    return `
+      <div class="material-card">
+        <h3>${escapeHtml(name)}</h3>
+        <p><strong>Material-ID:</strong> ${escapeHtml(id)}</p>
+        <p><strong>Station:</strong> ${escapeHtml(station)}</p>
+        <p><strong>Status:</strong> ${escapeHtml(status)}</p>
+      </div>
+    `;
+  }).join("");
 }
-
 
 /* =====================================================
    STATIONER
