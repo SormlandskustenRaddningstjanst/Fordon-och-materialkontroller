@@ -9,15 +9,8 @@
 
   <link rel="stylesheet" href="style.css">
 
-  <script
-    src="https://unpkg.com/html5-qrcode"
-    defer>
-  </script>
-
-  <script
-    src="app.js"
-    defer>
-  </script>
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="app.js" defer></script>
 </head>
 
 <body>
@@ -72,6 +65,11 @@
         <span>Inventering</span>
       </button>
 
+      <button class="menu-button" id="dashboardButton">
+        <span class="menu-icon">📊</span>
+        <span>Statistik och översikt</span>
+      </button>
+
     </div>
 
   </section>
@@ -84,15 +82,11 @@
     <button class="back-button" data-back>← Tillbaka</button>
 
     <div class="card">
-
       <h2>Sök material</h2>
 
-      <label for="materialSearch">
-        Material-ID
-      </label>
+      <label for="materialSearch">Material-ID</label>
 
       <div class="search-row">
-
         <input
           id="materialSearch"
           type="text"
@@ -102,13 +96,11 @@
         <button id="searchMaterialButton" class="button primary-button">
           Sök
         </button>
-
       </div>
 
       <button id="searchScanButton" class="secondary-button full">
         📷 Skanna QR
       </button>
-
     </div>
 
   </section>
@@ -121,7 +113,6 @@
     <button class="back-button" data-back>← Tillbaka</button>
 
     <div class="card">
-
       <h2>Skanna QR-kod</h2>
 
       <div id="reader"></div>
@@ -133,7 +124,6 @@
       <button id="stopScannerButton" class="secondary-button full">
         Stoppa kamera
       </button>
-
     </div>
 
   </section>
@@ -150,36 +140,15 @@
     <div id="materialCard"></div>
 
     <div class="action-grid">
-
-      <button class="action-button checkin" id="checkinButton">
-        CHECKA IN
-      </button>
-
-      <button class="action-button checkout" id="checkoutButton">
-        CHECKA UT
-      </button>
-
-      <button class="action-button move" id="moveButton">
-        FLYTTA
-      </button>
-
-      <button class="action-button service" id="serviceButton">
-        SERVICE
-      </button>
-
-      <button class="action-button inventory" id="materialInventoryButton">
-        INVENTERING
-      </button>
-
+      <button class="action-button checkin" id="checkinButton">CHECKA IN</button>
+      <button class="action-button checkout" id="checkoutButton">CHECKA UT</button>
+      <button class="action-button move" id="moveButton">FLYTTA</button>
+      <button class="action-button service" id="serviceButton">SERVICE</button>
+      <button class="action-button inventory" id="materialInventoryButton">INVENTERING</button>
     </div>
 
-    <button id="historyButton" class="secondary-button full">
-      📜 Historik
-    </button>
-
-    <button id="newSearchButton" class="secondary-button full">
-      🔍 Ny sökning
-    </button>
+    <button id="historyButton" class="secondary-button full">📜 Historik</button>
+    <button id="newSearchButton" class="secondary-button full">🔍 Ny sökning</button>
 
   </section>
 
@@ -191,83 +160,38 @@
     <button class="back-button" data-back>← Tillbaka</button>
 
     <div class="card">
-
       <h2>➕ Nytt material</h2>
 
-      <p class="muted">
-        Material-ID skapas automatiskt.
-      </p>
+      <p class="muted">Material-ID skapas automatiskt.</p>
 
-      <label for="newMaterialName">
-        Material
-      </label>
+      <label for="newMaterialName">Material</label>
+      <input id="newMaterialName" type="text" placeholder="Ex. Slang 42 mm">
 
-      <input
-        id="newMaterialName"
-        type="text"
-        placeholder="Ex. Slang 42 mm">
+      <label for="newMaterialCategory">Kategori</label>
+      <input id="newMaterialCategory" type="text" placeholder="Ex. Slang">
 
-      <label for="newMaterialCategory">
-        Kategori
-      </label>
+      <label for="newMaterialSerial">Serienummer</label>
+      <input id="newMaterialSerial" type="text" placeholder="Valfritt">
 
-      <input
-        id="newMaterialCategory"
-        type="text"
-        placeholder="Ex. Slang">
+      <label for="newMaterialQuantity">Antal</label>
+      <input id="newMaterialQuantity" type="number" min="1" value="1">
 
-      <label for="newMaterialSerial">
-        Serienummer
-      </label>
-
-      <input
-        id="newMaterialSerial"
-        type="text"
-        placeholder="Valfritt">
-
-      <label for="newMaterialQuantity">
-        Antal
-      </label>
-
-      <input
-        id="newMaterialQuantity"
-        type="number"
-        min="1"
-        value="1">
-
-      <label for="newMaterialStation">
-        Station
-      </label>
-
+      <label for="newMaterialStation">Station</label>
       <select id="newMaterialStation">
         <option value="">Välj station</option>
       </select>
 
-      <label for="newMaterialDate">
-        Kontrolldatum
-      </label>
+      <label for="newMaterialDate">Kontrolldatum</label>
+      <input id="newMaterialDate" type="date">
 
-      <input
-        id="newMaterialDate"
-        type="date">
+      <label for="newMaterialComment">Kommentar</label>
+      <textarea id="newMaterialComment" rows="4" placeholder="Valfritt"></textarea>
 
-      <label for="newMaterialComment">
-        Kommentar
-      </label>
-
-      <textarea
-        id="newMaterialComment"
-        rows="4"
-        placeholder="Valfritt"></textarea>
-
-      <button
-        id="createMaterialButton"
-        class="button primary-button full">
+      <button id="createMaterialButton" class="button primary-button full">
         ➕ Registrera material
       </button>
 
       <div id="newMaterialMessage"></div>
-
     </div>
 
   </section>
@@ -280,7 +204,6 @@
     <button class="back-button" data-back>← Tillbaka</button>
 
     <div class="card">
-
       <h2>📦 Alla material</h2>
 
       <input
@@ -291,7 +214,6 @@
       <div id="materialList">
         <p class="muted">Hämtar material...</p>
       </div>
-
     </div>
 
   </section>
@@ -304,11 +226,8 @@
     <button class="back-button" data-back>← Tillbaka</button>
 
     <div class="card">
-
       <h2>🏢 Stationer</h2>
-
       <div id="stationList"></div>
-
     </div>
 
   </section>
@@ -321,25 +240,40 @@
     <button class="back-button" data-back>← Tillbaka</button>
 
     <div class="card">
-
       <h2>📋 Inventering</h2>
 
       <p class="muted">
         Sök eller skanna material för att registrera en inventering.
       </p>
 
-      <button
-        id="inventoryScanButton"
-        class="button primary-button full">
+      <button id="inventoryScanButton" class="button primary-button full">
         📷 Skanna QR
       </button>
 
-      <button
-        id="inventorySearchButton"
-        class="secondary-button full">
+      <button id="inventorySearchButton" class="secondary-button full">
         🔍 Sök material
       </button>
+    </div>
 
+  </section>
+
+
+  <!-- STATISTIK OCH ÖVERSIKT -->
+
+  <section id="dashboardView" class="view">
+
+    <button class="back-button" data-back>← Tillbaka</button>
+
+    <div class="card">
+      <h2>📊 Statistik och översikt</h2>
+
+      <p class="muted">
+        Sammanställning av material från Baserow.
+      </p>
+
+      <div id="dashboardContent">
+        <p class="muted">Hämtar statistik...</p>
+      </div>
     </div>
 
   </section>
@@ -354,13 +288,11 @@
     </button>
 
     <div class="card">
-
       <h2>📜 Historik</h2>
 
       <div id="historyList">
         <p class="muted">Hämtar historik...</p>
       </div>
-
     </div>
 
   </section>
@@ -374,9 +306,7 @@
 
   <div class="modal-box">
 
-    <button id="closeModal" class="modal-close">
-      ×
-    </button>
+    <button id="closeModal" class="modal-close">×</button>
 
     <h2 id="modalTitle"></h2>
 
