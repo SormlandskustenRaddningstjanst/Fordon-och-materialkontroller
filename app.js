@@ -1,4 +1,4 @@
-
+```
 const API_URL =
   "https://ros-material-api.peter-hasselberg.workers.dev";
 
@@ -1092,61 +1092,16 @@ function renderMaterialList() {
     const station = valueOf(material["Station"]) || "-";
     const status = valueOf(material["Status"]) || "-";
 
-    const safeId = escapeHtml(id);
-
     return `
-      <div
-        class="material-card"
-        role="button"
-        tabindex="0"
-        data-material-id="${safeId}"
-        title="Öppna material"
-        style="cursor: pointer;"
-      >
+      <div class="material-card">
         <h3>${escapeHtml(name)}</h3>
         <p><strong>Material-ID:</strong> ${escapeHtml(id)}</p>
         <p><strong>Station:</strong> ${escapeHtml(station)}</p>
         <p><strong>Status:</strong> ${escapeHtml(status)}</p>
-        <p class="muted">Tryck för att öppna materialet</p>
       </div>
     `;
   }).join("");
 }
-
-/* Öppna material från listan genom klick eller Enter */
-$("materialList").addEventListener("click", event => {
-  const card = event.target.closest("[data-material-id]");
-
-  if (!card) {
-    return;
-  }
-
-  const materialId = card.dataset.materialId;
-
-  if (materialId) {
-    loadMaterial(materialId);
-  }
-});
-
-$("materialList").addEventListener("keydown", event => {
-  if (event.key !== "Enter" && event.key !== " ") {
-    return;
-  }
-
-  const card = event.target.closest("[data-material-id]");
-
-  if (!card) {
-    return;
-  }
-
-  event.preventDefault();
-
-  const materialId = card.dataset.materialId;
-
-  if (materialId) {
-    loadMaterial(materialId);
-  }
-});
 
 /* =====================================================
    STATIONER
@@ -1421,6 +1376,124 @@ $("inventoryButton")
   );
 
 
+
+/* =====================================================
+   STATISTIK OCH ÖVERSIKT
+===================================================== */
+
+function normalizeMaterial(material) {
+  return {
+    id: valueOf(material["Material-ID"]),
+    name: valueOf(material["Material"]) || "Namnlöst material",
+    category: valueOf(material["Kategori"]) || "Okänd kategori",
+    station: valueOf(material["Station"]) || "Ej angiven",
+    status: valueOf(material["Status"]) || "Ej angiven",
+    quantity: Number(valueOf(material["Antal"])) || 0
+  };
+}
+
+async function loadDashboard() {
+  showView("dashboardView");
+
+  const target = $("dashboardContent");
+
+  if (!target) {
+    return;
+  }
+
+  target.innerHTML = '<p class="muted">Hämtar statistik...</p>';
+
+  try {
+    const data = await apiGet("/material-list");
+
+    const materials = Array.isArray(data.materials)
+      ? data.materials
+      : (Array.isArray(data.material) ? data.material : []);
+
+    const normalized = materials.map(normalizeMaterial);
+
+    const totalItems = normalized.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    const byStatus = {};
+    const byStation = {};
+
+    normalized.forEach(item => {
+      byStatus[item.status] = (byStatus[item.status] || 0) + 1;
+      byStation[item.station] = (byStation[item.station] || 0) + 1;
+    });
+
+    const statusRows = Object.entries(byStatus)
+      .sort((a, b) => b[1] - a[1])
+      .map(([status, count]) =>
+        "<li><strong>" +
+        escapeHtml(status) +
+        "</strong>: " +
+        count +
+        " materialposter</li>"
+      )
+      .join("");
+
+    const stationRows = Object.entries(byStation)
+      .sort((a, b) => b[1] - a[1])
+      .map(([station, count]) =>
+        "<li><strong>" +
+        escapeHtml(station) +
+        "</strong>: " +
+        count +
+        " materialposter</li>"
+      )
+      .join("");
+
+    target.innerHTML = `
+      <div class="dashboard-grid">
+        <div class="stat-card">
+          <h3>Materialposter</h3>
+          <strong>${normalized.length}</strong>
+        </div>
+
+        <div class="stat-card">
+          <h3>Totalt antal</h3>
+          <strong>${totalItems}</strong>
+        </div>
+
+        <div class="stat-card">
+          <h3>Stationer</h3>
+          <strong>${Object.keys(byStation).length}</strong>
+        </div>
+
+        <div class="stat-card">
+          <h3>Statusar</h3>
+          <strong>${Object.keys(byStatus).length}</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Fördelning per status</h3>
+        <ul>${statusRows || "<li>Ingen data</li>"}</ul>
+      </div>
+
+      <div class="card">
+        <h3>Fördelning per station</h3>
+        <ul>${stationRows || "<li>Ingen data</li>"}</ul>
+      </div>
+    `;
+  } catch (error) {
+    target.innerHTML =
+      '<div class="info-message">Kunde inte läsa statistik: ' +
+      escapeHtml(error.message) +
+      "</div>";
+  }
+}
+
+const dashboardButton = $("dashboardButton");
+
+if (dashboardButton) {
+  dashboardButton.addEventListener("click", loadDashboard);
+}
+
 /* =====================================================
    SÖK
 ===================================================== */
@@ -1636,3 +1709,4 @@ $("newMaterialDate").value =
   new Date()
     .toISOString()
     .slice(0, 10);
+```
